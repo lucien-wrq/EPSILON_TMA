@@ -1,16 +1,5 @@
 <?php
 
-// System of access code to manage the suscription at a course / challenge with as calculated data as possible, so with less possible DB connection - eco friendly :)
-
-/*
-
-Badge = rank
-Parcours = course
-Challenge = challenge
-Défi = work
-
-*/
-
 $rank0 = "Parcours non suivi";
 $rank1 = "Parcours suivi";
 $rank2 = "Apprenti";
@@ -22,8 +11,6 @@ $course0 = "Apprentissage et transmission";
 $course1 = "Culture en pot";
 $course2 = "Art de l'ouvrage";
 $course3 = "Arts Associés";
-
-// work listing is on bcaWorkUpload.php
 
 $mail = isset($_COOKIE['mail']) ? $_COOKIE['mail'] : $_SESSION['mail'];
 
@@ -68,7 +55,7 @@ function isAuthorizedToJoin($NumberOfTheCourse, $accessCodeArrayed){
 			$isAuthorized = false;
 		}
 	}
-	return isset($isAuthorized) ? $isAuthorized : false;//$isAuthorized;
+	return isset($isAuthorized) ? $isAuthorized : false;
 }
 
 function isJoined($NumberOfTheCourse, $accessCodeArrayed){
@@ -79,8 +66,7 @@ function displayCourseLink($NumberOfTheCourse, $accessCodeArrayed){
 	if(isAuthorizedToJoin($NumberOfTheCourse, $accessCodeArrayed)){
 		return ' <form method="POST" name="course'.$NumberOfTheCourse.'"><input type="hidden" name="course" value="'.$NumberOfTheCourse.'"><a class="noUnderline" href="#" onclick="javascript:document.course'.$NumberOfTheCourse.'.submit();"><i class="fas fa-shoe-prints"></i> Joindre</a></form>';
 	}
-	elseif(isJoined($NumberOfTheCourse, $accessCodeArrayed)){
-		// TODO: completer isJoined avec isJoinable qui contiendra en plus les regles d'acces au challenge
+	elseif(isJoined($NumberOfTheCourse, $accessCodeArrayed)){ // && isJoinable($NumberOfTheCourse, $accessCodeArrayed)
 		return ' <a class="noUnderline continue" href="bcaWorkUpload.php?course='.$NumberOfTheCourse.'&challenge='.getNextChallenge($NumberOfTheCourse, $accessCodeArrayed).'"><i class="fas fa-arrow-right"></i> Continuer</a></form>';
 	}
 	else{
@@ -159,4 +145,68 @@ function displayCoursesList($accessCodeArrayed){
 			<div class="squareRight"><span class="see"><i class="fas fa-eye"></i>Voir</span></div>
 		</div>';
 	echo '</ul>';
+}
+
+function getIdUser() {
+	require('env.php');
+	global $mail;
+	$select = $db->query('SELECT id FROM user WHERE mail="'.$mail.'"');
+	$result = $select->fetch();
+	return $result ? $result['id'] : null;
+}
+
+function displayFilesUpload($accessCodeArrayed) {
+    global $course0, $course1, $course2, $course3;
+
+    $idUser = getIdUser();
+
+    if (!$idUser) {
+        echo "Utilisateur introuvable.";
+        return;
+    }
+
+    $baseDir = $idUser . '/';
+    if (!is_dir($baseDir)) {
+        echo "Aucun dossier de fichiers trouvé.";
+        return;
+    }
+
+    $dirs = scandir($baseDir);
+    $dirs = array_filter($dirs, function($dir) {
+        return preg_match('/^filesUploaded_\d+_\d+$/', $dir);
+    });
+
+    if (empty($dirs)) {
+        echo "<p>Aucun fichier uploadé pour l'instant.</p>";
+        return;
+    }
+
+    foreach ($dirs as $dirName) {
+        if (preg_match('/^filesUploaded_(\d+)_(\d+)$/', $dirName, $matches)) {
+            $course = intval($matches[1]);
+            $challenge = intval($matches[2]);
+
+            $folderPath = $baseDir . $dirName;
+            $files = array_diff(scandir($folderPath), ['.', '..']);
+
+            if (!empty($files)) {
+
+                switch ($course) {
+                    case 0: $courseName = $course0; break;
+                    case 1: $courseName = $course1; break;
+                    case 2: $courseName = $course2; break;
+                    case 3: $courseName = $course3; break;
+                    default: $courseName = "Cours #$course"; break;
+                }
+
+				echo "<h2>Mes fichiers uploadés</h2>";
+                echo "<h3>$courseName — Défi $challenge</h3><ul>";
+                foreach ($files as $file) {
+                    $filePath = $folderPath . '/' . $file;
+                    echo '<li class="square"><a href="' . $filePath . '" target="_blank">' . htmlspecialchars($file) . '</a></li>';
+                }
+                echo "</ul>";
+            }
+        }
+    }
 }

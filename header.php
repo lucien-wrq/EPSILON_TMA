@@ -13,7 +13,9 @@
     <header>
         <?php
 
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if(isset($_COOKIE['mail']) || isset($_SESSION['mail'])){
             $id = isset($_COOKIE['mail']) ? $_COOKIE['mail'] : $_SESSION['mail'];
@@ -21,13 +23,16 @@
             <nav>
                 <ul id="connection">
                     <ol id="Accueil">
-                        <a href="index.php"><i class="fas fa-home"></i>Acceuil</a>
+                        <a href="index.php"><i class="fas fa-home"></i> Acceuil</a>
+                    </ol>
+                    <ol id="about">
+                        <a href="fichier.php"><i class="fas fa-info-circle"></i> Mes fichiers</a>
                     </ol>
                     <ol id="signup">
                         <a><i class="fas fa-user"></i> '.$id.'</a>
                     </ol>
                     <ol>
-                        <i class="fas fa-lock"></i><a href="userPasswordReset.php">Change password</a>
+                        <i class="fas fa-lock"></i><a href="userPasswordReset.php"> Change password</a>
                     </ol>
                     <ol id="signout">
                         <a href="userDisconnection.php"><i class="fas fa-sign-out-alt"></i></a>
@@ -55,5 +60,5 @@
         }
         ?>
     </header>
-		
+
 
